@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.concurrent.LinkedBlockingQueue;
 
 
-public class ZooKeeperPeerServerImpl implements ZooKeeperPeerServer{
+public class ZooKeeperPeerServerImpl extends Thread implements ZooKeeperPeerServer{
     private final InetSocketAddress myAddress;
     private final int myPort;
     private ServerState state;
