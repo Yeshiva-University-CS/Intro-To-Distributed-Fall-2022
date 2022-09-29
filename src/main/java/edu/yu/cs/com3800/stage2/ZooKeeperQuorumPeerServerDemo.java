@@ -3,6 +3,7 @@ package edu.yu.cs.com3800.stage2;
 import edu.yu.cs.com3800.Vote;
 import edu.yu.cs.com3800.ZooKeeperPeerServer;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -32,7 +33,7 @@ public class ZooKeeperQuorumPeerServerDemo {
             map.remove(entry.getKey());
             ZooKeeperPeerServerImpl server = new ZooKeeperPeerServerImpl(entry.getValue().getPort(), 0, entry.getKey(), map);
             servers.add(server);
-            new Thread(server, "Server on port " + server.getMyAddress().getPort()).start();
+            new Thread(server, "Server on port " + server.getAddress().getPort()).start();
         }
         //wait for threads to start
         try {
@@ -44,7 +45,7 @@ public class ZooKeeperQuorumPeerServerDemo {
         for (ZooKeeperPeerServer server : servers) {
             Vote leader = server.getCurrentLeader();
             if (leader != null) {
-                System.out.println("Server on port " + server.getMyAddress().getPort() + " whose ID is " + server.getId() + " has the following ID as its leader: " + leader.getProposedLeaderID() + " and its state is " + server.getPeerState().name());
+                System.out.println("Server on port " + server.getAddress().getPort() + " whose ID is " + server.getServerId() + " has the following ID as its leader: " + leader.getProposedLeaderID() + " and its state is " + server.getPeerState().name());
                 server.shutdown();
             }
         }
