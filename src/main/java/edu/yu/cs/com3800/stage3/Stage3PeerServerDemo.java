@@ -2,6 +2,7 @@ package edu.yu.cs.com3800.stage3;
 
 import edu.yu.cs.com3800.*;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,14 +24,14 @@ public class Stage3PeerServerDemo {
     public Stage3PeerServerDemo() throws Exception {
         //step 1: create sender & sending queue
         this.outgoingMessages = new LinkedBlockingQueue<>();
-        UDPMessageSender sender = new UDPMessageSender(this.outgoingMessages);
+        UDPMessageSender sender = new UDPMessageSender(this.outgoingMessages,this.myPort);
         //step 2: create servers
         createServers();
         //step2.1: wait for servers to get started
         try {
-            Thread.sleep(3000);
+            Thread.sleep(5000);
         }
-        catch (Exception e) {
+        catch (InterruptedException e) {
         }
         printLeaders();
         //step 3: since we know who will win the election, send requests to the leader, this.leaderPort
@@ -40,7 +41,7 @@ public class Stage3PeerServerDemo {
         }
         Util.startAsDaemon(sender, "Sender thread");
         this.incomingMessages = new LinkedBlockingQueue<>();
-        UDPMessageReceiver receiver = new UDPMessageReceiver(this.incomingMessages, this.myAddress, this.myPort);
+        UDPMessageReceiver receiver = new UDPMessageReceiver(this.incomingMessages, this.myAddress, this.myPort,null);
         Util.startAsDaemon(receiver, "Receiver thread");
         //step 4: validate responses from leader
 
@@ -54,7 +55,7 @@ public class Stage3PeerServerDemo {
         for (ZooKeeperPeerServer server : this.servers) {
             Vote leader = server.getCurrentLeader();
             if (leader != null) {
-                System.out.println("Server on port " + server.getMyAddress().getPort() + " whose ID is " + server.getId() + " has the following ID as its leader: " + leader.getProposedLeaderID() + " and its state is " + server.getPeerState().name());
+                System.out.println("Server on port " + server.getAddress().getPort() + " whose ID is " + server.getServerId() + " has the following ID as its leader: " + leader.getProposedLeaderID() + " and its state is " + server.getPeerState().name());
             }
         }
     }
@@ -70,7 +71,7 @@ public class Stage3PeerServerDemo {
         for (int i = 0; i < this.ports.length; i++) {
             Message msg = this.incomingMessages.take();
             String response = new String(msg.getMessageContents());
-            completeResponse += "Response #" + i + ":\n" + response + "\n";
+            completeResponse += "Response to request " + msg.getRequestID() + ":\n" + response + "\n\n";
         }
         System.out.println(completeResponse);
     }
@@ -80,7 +81,7 @@ public class Stage3PeerServerDemo {
         this.outgoingMessages.put(msg);
     }
 
-    private void createServers() {
+    private void createServers() throws IOException {
         //create IDs and addresses
         HashMap<Long, InetSocketAddress> peerIDtoAddress = new HashMap<>(8);
         for (int i = 0; i < this.ports.length; i++) {
@@ -91,13 +92,13 @@ public class Stage3PeerServerDemo {
         for (Map.Entry<Long, InetSocketAddress> entry : peerIDtoAddress.entrySet()) {
             HashMap<Long, InetSocketAddress> map = (HashMap<Long, InetSocketAddress>) peerIDtoAddress.clone();
             map.remove(entry.getKey());
-            ZooKeeperPeerServer server = new ZooKeeperPeerServerImpl(entry.getValue().getPort(), 0, entry.getKey(), map);
+            ZooKeeperPeerServerImpl server = new ZooKeeperPeerServerImpl(entry.getValue().getPort(), 0, entry.getKey(), map);
             this.servers.add(server);
-            new Thread(server, "Server on port " + server.getMyAddress().getPort()).start();
+            server.start();
         }
     }
 
     public static void main(String[] args) throws Exception {
-        new Stage3PeerServerDemo();
+        new Stage3PeerServerRunnerTest();
     }
 }
