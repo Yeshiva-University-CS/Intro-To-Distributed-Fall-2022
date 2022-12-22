@@ -9,8 +9,10 @@ public class Util {
 
     public static byte[] readAllBytesFromNetwork(InputStream in)  {
         try {
-            while (in.available() == 0) {
+            int tries = 0;
+            while (in.available() == 0 && tries < 10) {
                 try {
+                    tries++;
                     Thread.currentThread().sleep(500);
                 }
                 catch (InterruptedException e) {
@@ -33,7 +35,7 @@ public class Util {
         return buffer.toByteArray();
     }
 
-    public static Thread startAsDaemon(Thread run, String name) {
+    public static Thread startAsDaemon(Runnable run, String name) {
         Thread thread = new Thread(run, name);
         thread.setDaemon(true);
         thread.start();
